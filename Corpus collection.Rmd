@@ -1,0 +1,92 @@
+---
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+EASYPUBMED --> https://cran.r-project.org/web/packages/easyPubMed/easyPubMed.pdf
+
+```{r}
+library("easyPubMed")
+library("httr")
+
+dami_query <- 'Digestive System Diseases[MeSH Term] AND ("2019/01/01"[PDAT] : "2019/12/31"[PDAT])'
+dami_on_pubmed <- get_pubmed_ids(dami_query)
+dami_abstracts_xml <- fetch_pubmed_data(dami_on_pubmed, encoding = "ASCII", retmax = 1200)
+xx <- table_articles_byAuth(pubmed_data = dami_abstracts_xml,
+                            included_authors = "first",
+                            max_chars = -1,
+                            getKeywords = TRUE)
+
+```
+
+```{r}
+xx <- xx[,-c(8)] 
+xx <- na.omit(xx)
+final <- xx[-c(1:3), c(3,4,9)]
+table(is.na(final))
+```
+```{r}
+write.table(final, "digestive.txt", row.names = FALSE)
+```
+
+
+```{r}
+
+```
+
+************** PARTE 2. PROCESADO EN PYTHON ********************
+
+ETIQUETADO Y CREACION DE LOS GRUPOS TRAIN Y TEST
+
+```{r}
+setwd("C:/Users/Andre/OneDrive/Desktop/TFM/database/")
+#leemos el documento final y generamos el etiquetado por one hot coding 
+cardio <- read.csv("C:/Users/Andre/OneDrive/Desktop/TFM/database/cardioprocesado.csv")
+cardio <- cardio[-1]
+cardio <- cbind(cardio, "Cardio" = 1, "Diges" = 0, "Resp" = 0, "Nerv" = 0, "Infe" = 0)
+```
+
+```{r}
+diges <- read.csv("C:/Users/Andre/OneDrive/Desktop/TFM/database/digestiveprocesado.csv")
+diges <- diges[-1]
+diges <- cbind(diges, "Cardio" = 0, "Diges" = 1, "Resp" = 0, "Nerv" = 0, "Infe" = 0)
+```
+
+```{r}
+neur <- read.csv("C:/Users/Andre/OneDrive/Desktop/TFM/database/neuralprocesado.csv")
+neur <- neur[-1]
+neur <- cbind(neur, "Cardio" = 0, "Diges" = 0, "Resp" = 0, "Nerv" = 1, "Infe" = 0)
+```
+
+```{r}
+inf <- read.csv("C:/Users/Andre/OneDrive/Desktop/TFM/database/infectionprocesado.csv")
+inf <- inf[-1]
+inf <- cbind(inf, "Cardio" = 0, "Diges" = 0, "Resp" = 0, "Nerv" = 0, "Infe" = 1)
+```
+
+```{r}
+pulm <- read.csv("C:/Users/Andre/OneDrive/Desktop/TFM/database/pulmonarprocesado.csv")
+pulm <- pulm[-1]
+pulm <- cbind(pulm, "Cardio" = 0, "Diges" = 0, "Resp" = 1, "Nerv" = 0, "Infe" = 0)
+```
+
+```{r}
+dataset <- rbind(cardio, diges, neur, inf, pulm)
+
+library(dplyr)
+allrows <- 1:nrow(dataset)
+set.seed(123)
+trainrows <- sample(allrows, replace = F, size = 0.67*length(allrows))
+testrows <- allrows[-trainrows]
+
+test_df<- dataset[testrows,]
+train_df <- dataset[trainrows,]
+```
+
+```{r}
+write.csv(test_df, "test_df.csv")
+write.csv(train_df, "train_df.csv")
+```
+
